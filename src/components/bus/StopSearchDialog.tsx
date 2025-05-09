@@ -53,9 +53,16 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
       }
     } catch (error) {
       console.error('Error searching stops:', error);
+      let description = "Could not fetch stop data. Please try again.";
+      if (error instanceof TypeError && error.message.toLowerCase().includes('failed to fetch')) {
+        description = "Network error: Could not connect to the server. Please check your internet connection or if an ad-blocker is interfering. The API might also be temporarily unavailable or blocking requests from this origin.";
+      } else if (error instanceof Error) {
+        // For GraphQL errors or other errors from fetchGraphQL
+        description = error.message;
+      }
       toast({
         title: "Search Error",
-        description: "Could not fetch stop data. Please try again.",
+        description: description,
         variant: "destructive",
       });
       setSearchResults([]);
@@ -72,7 +79,14 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        setSearchTerm('');
+        setSearchResults([]);
+        setIsLoading(false);
+      }
+      onOpenChange(open);
+    }}>
       <DialogContent className="sm:max-w-[425px] shadow-xl">
         <DialogHeader>
           <DialogTitle>Add Favorite Bus Stop</DialogTitle>
@@ -91,14 +105,19 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="e.g., Kamppi or E1234"
               className="flex-grow"
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSearch()}
             />
-            <Button onClick={handleSearch} disabled={isLoading} className="shrink-0">
+            <Button onClick={handleSearch} disabled={isLoading || searchTerm.trim().length < 3} className="shrink-0">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SearchIcon className="h-4 w-4" />}
               <span className="ml-2">Search</span>
             </Button>
           </div>
-          {searchResults.length > 0 && (
+          {isLoading && searchResults.length === 0 && (
+            <div className="flex justify-center items-center h-[200px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          )}
+          {!isLoading && searchResults.length > 0 && (
             <ScrollArea className="h-[200px] rounded-md border p-2">
               <div className="space-y-2">
                 {searchResults.map((stop) => (
@@ -117,6 +136,11 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
               </div>
             </ScrollArea>
           )}
+           {!isLoading && searchResults.length === 0 && searchTerm.trim().length >=3 && (
+            <div className="p-6 text-center text-muted-foreground h-[200px] flex flex-col justify-center items-center">
+                <p>No stops found matching your search criteria.</p>
+            </div>
+           )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
