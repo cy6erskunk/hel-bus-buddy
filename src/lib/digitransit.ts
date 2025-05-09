@@ -1,24 +1,46 @@
-
 import type { StopSearchQueryResult, StopDeparturesQueryResult, StopDetails, StopSearchItem } from './types';
 
-const API_URL = 'https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql';
+//const API_URL = 'https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql';
+const API_URL = '/api/digitransit'; 
+const API_KEY = process.env.NEXT_PUBLIC_HSL_API_KEY || '';
+
+if (!API_KEY && process.env.NODE_ENV !== 'test') { // Added a check for test environment
+  // Only throw error or log if API_KEY is truly needed by this module (due to rewrites)
+  // and it's not a test environment where it might be mocked or not required.
+  console.warn('NEXT_PUBLIC_HSL_API_KEY environment variable not set. This might be an issue if client-side calls directly use it via rewrites.');
+  // Depending on strictness, you might still want to throw an error:
+  // throw new Error('NEXT_PUBLIC_HSL_API_KEY environment variable not set.');
+}
 
 async function fetchGraphQL(query: string, variables: Record<string, any> = {}) {
+  // Log the API key being used if it's set, to help debug "Access Denied" issues.
+  // This is useful if client-side code (via rewrites) is making the actual call to Digitransit.
+  if (API_KEY) {
+    console.log("API Key being used in src/lib/digitransit.ts (via NEXT_PUBLIC_HSL_API_KEY):", API_KEY ? '********' : 'NOT SET'); // Mask key in log for security
+  } else {
+    console.warn("No API Key (NEXT_PUBLIC_HSL_API_KEY) found in src/lib/digitransit.ts. If using rewrites, this could be an issue.");
+  }
+
   try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    // If the rewrite is correctly proxying and requires the key from the client.
+    if (API_KEY) {
+        headers['digitransit-subscription-key'] = API_KEY;
+    }
+
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add any HSL-specific API key if required, though it's often not for public queries
-        // 'digitransit-subscription-key': 'YOUR_API_KEY_IF_NEEDED' 
-      },
+      headers: headers,
       body: JSON.stringify({ query, variables }),
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error('GraphQL API Error Response:', errorBody);
-      throw new Error(`GraphQL API request failed: ${response.status} ${response.statusText}`);
+      console.error('GraphQL API Error Response Status:', response.status, response.statusText);
+      console.error('GraphQL API Error Response Body:', errorBody);
+      throw new Error(`GraphQL API request failed: ${response.status} ${response.statusText}. Body: ${errorBody}`);
     }
 
     const jsonResponse = await response.json();
@@ -28,7 +50,9 @@ async function fetchGraphQL(query: string, variables: Record<string, any> = {}) 
     }
     return jsonResponse.data;
   } catch (error) {
-    console.error('Error fetching from Digitransit API:', error);
+    console.error('Error fetching from Digitransit API (src/lib/digitransit.ts):', error instanceof Error ? error.message : String(error));
+    // To see more details during development, you can log the full error object:
+    // console.error('Full error object (src/lib/digitransit.ts):', JSON.stringify(error, null, 2));
     throw error; // Re-throw to be handled by the caller
   }
 }

@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/digitransit/:path*',
+        destination: 'https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql/:path*', // Or the specific endpoint
+      },
+    ];
+  },
 };
 
 export default nextConfig;

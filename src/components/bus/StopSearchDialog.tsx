@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { FC } from 'react';
@@ -15,10 +14,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { searchStopsByName } from '@/lib/digitransit';
 import type { StopSearchItem, Stop } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, SearchIcon } from 'lucide-react';
+import { searchStopsByName } from '@/lib/digitransit';
+import { Loader2, Search } from 'lucide-react';
 
 interface StopSearchDialogProps {
   isOpen: boolean;
@@ -42,9 +41,10 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
       return;
     }
     setIsLoading(true);
+    setSearchResults([]); // Clear previous results
     try {
       const results = await searchStopsByName(searchTerm.trim());
-      setSearchResults(results);
+      setSearchResults(results); // Update search results
       if (results.length === 0) {
         toast({
           title: "No stops found",
@@ -52,12 +52,11 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
         });
       }
     } catch (error) {
-      console.error('Error searching stops:', error);
-      let description = "Could not fetch stop data. Please try again.";
+      console.error('Error searching stops:', JSON.stringify(error, null, 2));
+      let description = 'An unexpected error occurred while searching for stops.';
       if (error instanceof TypeError && error.message.toLowerCase().includes('failed to fetch')) {
         description = "Network error: Could not connect to the server. Please check your internet connection or if an ad-blocker is interfering. The API might also be temporarily unavailable or blocking requests from this origin.";
       } else if (error instanceof Error) {
-        // For GraphQL errors or other errors from fetchGraphQL
         description = error.message;
       }
       toast({
@@ -108,7 +107,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSearch()}
             />
             <Button onClick={handleSearch} disabled={isLoading || searchTerm.trim().length < 3} className="shrink-0">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SearchIcon className="h-4 w-4" />}
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               <span className="ml-2">Search</span>
             </Button>
           </div>
@@ -136,7 +135,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
               </div>
             </ScrollArea>
           )}
-           {!isLoading && searchResults.length === 0 && searchTerm.trim().length >=3 && (
+           {!isLoading && searchResults.length === 0 && searchTerm.trim().length >=3 && !isLoading && (
             <div className="p-6 text-center text-muted-foreground h-[200px] flex flex-col justify-center items-center">
                 <p>No stops found matching your search criteria.</p>
             </div>
