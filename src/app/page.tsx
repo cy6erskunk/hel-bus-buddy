@@ -1,16 +1,21 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FavoriteStopsManager } from '@/components/bus/FavoriteStopsManager';
-import { BusScheduleDisplay } from '@/components/bus/BusScheduleDisplay';
 import type { Stop, StopDetails } from '@/lib/types';
 import { getStopDepartures } from '@/lib/digitransit';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
+import { FavoriteStopsManager } from '@/components/bus/FavoriteStopsManager';
+import { BusScheduleDisplay } from '@/components/bus/BusScheduleDisplay';
+
+// Define a stable reference for the initial empty array for favoriteStops
+const initialFavoriteStopsValue: Stop[] = [];
 
 export default function HomePage() {
-  const [favoriteStops, setFavoriteStops] = useLocalStorage<Stop[]>('favoriteStops', []);
+  const [favoriteStops, setFavoriteStops] = useLocalStorage<Stop[]>(
+    'favoriteStops',
+    initialFavoriteStopsValue
+  );
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
   const [stopDetails, setStopDetails] = useState<StopDetails | null>(null);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
@@ -54,7 +59,7 @@ export default function HomePage() {
       setIsLoadingSchedule(false);
       setScheduleError(null);
     }
-  }, [selectedStop, toast]);
+  }, [selectedStop, toast, setStopDetails, setIsLoadingSchedule, setScheduleError]);
 
   const handleAddFavorite = useCallback((stop: Stop) => {
     if (!favoriteStops.find(fs => fs.gtfsId === stop.gtfsId)) {
@@ -81,11 +86,11 @@ export default function HomePage() {
       title: "Stop Removed",
       description: "The stop has been removed from your favorites.",
     });
-  }, [selectedStop, setFavoriteStops, toast]);
+  }, [selectedStop, setFavoriteStops, toast, setSelectedStop]);
 
   const handleSelectStop = useCallback((stop: Stop) => {
     setSelectedStop(stop);
-  }, []);
+  }, [setSelectedStop]);
 
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4">
