@@ -19,14 +19,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/digitransit/:path*',
-        destination: 'https://api.digitransit.fi/routing/v2/routers/hsl/index/graphql/:path*', // Updated to v2
-      },
-    ];
-  },
+  // async rewrites() {
+  //   return [
+  //     {
+  //       source: '/api/digitransit/:path*',
+  //       destination: 'https://api.digitransit.fi/routing/v2/routers/hsl/index/graphql/:path*', // Updated to v2
+  //     },
+  //   ];
+  // },
 };
 
 export default nextConfig;
