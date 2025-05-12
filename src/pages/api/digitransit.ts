@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { StopSearchQueryResult, StopDeparturesQueryResult, StopDetails, StopSearchItem } from '../../lib/types';
 
-const API_URL = 'https://api.digitransit.fi/routing/v2/routers/hsl/index/graphql'; // Updated to v2
+const API_URL = 'https://api.digitransit.fi/routing/v2/hsl/gtfs/v1'; // Updated to v2
 const API_KEY = process.env.HSL_API_KEY || '';
 
 if (!API_KEY) {
