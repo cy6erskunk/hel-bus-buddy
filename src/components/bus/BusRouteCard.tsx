@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { FC } from 'react';
@@ -45,7 +44,7 @@ export const BusRouteCard: FC<BusRouteCardProps> = ({ departure }) => {
         
         {/* Right side: Departure time */}
         <div className="w-full text-right sm:w-auto sm:text-right flex-shrink-0"> {/* Responsive width/alignment for time. flex-shrink-0 for row layout. */}
-          <p className={`text-xl font-bold ${arrivalTimeDisplay === 'NOW' ? 'text-accent' : ''}`}>
+          <p className={`text-lg sm:text-xl font-bold ${arrivalTimeDisplay === 'NOW' ? 'text-accent' : ''}`}>
             {arrivalTimeDisplay}
           </p>
         </div>
@@ -53,4 +52,3 @@ export const BusRouteCard: FC<BusRouteCardProps> = ({ departure }) => {
     </Card>
   );
 };
-
