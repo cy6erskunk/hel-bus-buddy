@@ -20,30 +20,58 @@ import type { StopSearchItem, Stop, VehicleMode } from '@/lib/types';
 import { AVAILABLE_MODES } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { searchStopsByName } from '@/lib/digitransit';
-import { Loader2, Search, Bus, TramFront, TrainTrack, Train, Ship, HelpCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, Search as SearchIcon, Bus, TramFront, TrainTrack, Train, Ship, HelpCircle, CheckCircle2 } from 'lucide-react'; // Renamed Search to SearchIcon
+import { cn } from '@/lib/utils';
 
 interface StopSearchDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onStopSelected: (stop: Stop) => void;
-  favoriteStops: Stop[]; // Added prop to check against existing favorites
+  favoriteStops: Stop[]; 
 }
 
 export const getVehicleModeIcon = (mode?: VehicleMode, props?: React.ComponentProps<typeof Bus>) => {
-  const iconProps = { className: "h-5 w-5 mr-2 text-muted-foreground shrink-0", ...props };
+  let modeColorClass = "text-muted-foreground"; // Default color
   switch (mode) {
     case "BUS":
-      return <Bus {...iconProps} />;
+      modeColorClass = "text-primary"; // Blue from theme for buses
+      break;
     case "TRAM":
-      return <TramFront {...iconProps} />;
+      modeColorClass = "text-green-600"; // Green for trams
+      break;
     case "SUBWAY":
-      return <TrainTrack {...iconProps} />; // Using TrainTrack for Subway
+      modeColorClass = "text-orange-600"; // Orange for metro/subway
+      break;
     case "RAIL":
-      return <Train {...iconProps} />;
+      modeColorClass = "text-purple-600"; // Purple for rail/train
+      break;
     case "FERRY":
-      return <Ship {...iconProps} />;
+      modeColorClass = "text-yellow-600"; // Yellow for ferries
+      break;
+  }
+
+  const baseIconClasses = "h-5 w-5 mr-2 shrink-0";
+
+  // Combine props: spread incoming props first, then apply base classes, 
+  // then specific class from props, and finally the modeColorClass to ensure it takes precedence for color.
+  const iconPropsCombined = {
+    ...props, 
+    className: cn(baseIconClasses, props?.className, modeColorClass),
+  };
+
+  switch (mode) {
+    case "BUS":
+      return <Bus {...iconPropsCombined} />;
+    case "TRAM":
+      return <TramFront {...iconPropsCombined} />;
+    case "SUBWAY":
+      return <TrainTrack {...iconPropsCombined} />; 
+    case "RAIL":
+      return <Train {...iconPropsCombined} />;
+    case "FERRY":
+      return <Ship {...iconPropsCombined} />;
     default:
-      return <HelpCircle {...iconProps} />;
+      return <HelpCircle {...iconPropsCombined} />;
   }
 };
 
@@ -88,7 +116,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
       } else if (error instanceof Error) {
         description = error.message;
       } else if (error && error.error && typeof error.error === 'string') {
-        description = error.error; // Use the nested error message if present
+        description = error.error; 
       }
       toast({
         title: "Search Error",
@@ -108,8 +136,6 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
       code: stop.code || undefined,
       vehicleMode: stop.vehicleMode
     });
-    // Do not close the dialog or clear search term/results here
-    // to allow adding multiple stops.
   };
 
   const isStopFavorite = (gtfsId: string): boolean => {
@@ -146,7 +172,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSearch()}
             />
             <Button onClick={handleSearch} disabled={isLoading || searchTerm.trim().length < 3} className="shrink-0">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SearchIcon className="h-4 w-4" />}
               <span className="ml-2">Search</span>
             </Button>
           </div>
@@ -163,7 +189,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
                     aria-label={`Filter by ${label}`}
                   />
                   <Label htmlFor={`mode-${mode}`} className="text-sm font-normal cursor-pointer flex items-center flex-1 min-w-0">
-                    {getVehicleModeIcon(mode, { className: "h-4 w-4 mr-1.5 text-muted-foreground"})}
+                    {getVehicleModeIcon(mode, { className: "h-4 w-4 mr-1.5"})}
                     <span className="truncate" title={label}>{label}</span>
                   </Label>
                 </div>
