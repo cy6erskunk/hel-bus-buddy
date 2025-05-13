@@ -2,9 +2,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { StopSearchQueryResult, StopDeparturesQueryResult, StopDetails, StopSearchItem, VehicleMode } from '../../lib/types';
 
-const API_URL = 'https://api.digitransit.fi/routing/v2/hsl/gtfs/v1';
-const API_KEY = process.env.HSL_API_KEY || '';
+const API_URL = process.env.API_URL || '';
+if (!API_URL) {
+  console.warn('API_URL environment variable not set. This is required to make requests to the Digitransit API. Requests will fail.');
+}
 
+const API_KEY = process.env.HSL_API_KEY || '';
 
 if (!API_KEY) {
   console.warn('HSL_API_KEY environment variable not set. This is required to make requests to the Digitransit API. Requests may fail.');
