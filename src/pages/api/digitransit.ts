@@ -2,8 +2,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { StopSearchQueryResult, StopDeparturesQueryResult, StopDetails, StopSearchItem, VehicleMode } from '../../lib/types';
 
-const API_URL = 'https://api.digitransit.fi/routing/v2/routers/hsl/index/graphql';
+const API_URL = 'https://api.digitransit.fi/routing/v2/hsl/gtfs/v1';
 const API_KEY = process.env.HSL_API_KEY || '';
+
 
 if (!API_KEY) {
   console.warn('HSL_API_KEY environment variable not set. This is required to make requests to the Digitransit API. Requests may fail.');
@@ -58,8 +59,8 @@ async function fetchGraphQL(query: string, variables: Record<string, any> = {}) 
 
 export async function searchStopsByName(name: string, modes?: VehicleMode[]): Promise<StopSearchItem[]> {
   const query = `
-    query SearchStops($name: String!, $modes: [VehicleMode]) {
-      stops(name: $name, modes: $modes) {
+    query SearchStops($name: String!) {
+      stops(name: $name) {
         gtfsId
         name
         code
@@ -68,11 +69,12 @@ export async function searchStopsByName(name: string, modes?: VehicleMode[]): Pr
     }
   `;
   const variables: { name: string; modes?: VehicleMode[] } = { name };
-  if (modes && modes.length > 0) {
-    variables.modes = modes;
-  }
   const data: StopSearchQueryResult = await fetchGraphQL(query, variables);
-  return data.stops?.map(stop => ({ ...stop, vehicleMode: stop.vehicleMode || undefined })) || [];
+  return data.stops?.map(stop => ({ ...stop, vehicleMode: stop.vehicleMode || undefined })).filter(stop => {
+    if (!modes || !stop.vehicleMode) return true;
+    
+    return modes.includes(stop.vehicleMode)
+  }) || [];
 }
 
 export async function getStopDepartures(stopGtfsId: string): Promise<StopDetails | null> {
