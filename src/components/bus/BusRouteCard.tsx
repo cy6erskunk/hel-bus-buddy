@@ -18,12 +18,13 @@ export const BusRouteCard: FC<BusRouteCardProps> = ({ departure }) => {
 
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
-      <CardContent className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <CardContent className="p-4 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left side: Bus icon, route name, headsign, real-time status */}
+        <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto"> {/* Added min-w-0 and responsive width */}
           <BusFront className="h-8 w-8 text-primary shrink-0" />
-          <div>
+          <div className="min-w-0 flex-grow"> {/* Added min-w-0 and flex-grow to allow truncation and proper sizing */}
             <div className="flex items-center gap-2 mb-1">
-              <Badge variant="secondary" className="text-sm px-2 py-1">
+              <Badge variant="secondary" className="text-sm px-2 py-1 shrink-0">
                 {departure.trip.routeShortName}
               </Badge>
               <p className="font-semibold text-base leading-tight truncate" title={departure.headsign}>
@@ -41,7 +42,9 @@ export const BusRouteCard: FC<BusRouteCardProps> = ({ departure }) => {
             </p>
           </div>
         </div>
-        <div className="text-right">
+        
+        {/* Right side: Departure time */}
+        <div className="w-full text-right sm:w-auto sm:text-right flex-shrink-0"> {/* Responsive width/alignment for time. flex-shrink-0 for row layout. */}
           <p className={`text-xl font-bold ${arrivalTimeDisplay === 'NOW' ? 'text-accent' : ''}`}>
             {arrivalTimeDisplay}
           </p>
@@ -50,3 +53,4 @@ export const BusRouteCard: FC<BusRouteCardProps> = ({ departure }) => {
     </Card>
   );
 };
+
