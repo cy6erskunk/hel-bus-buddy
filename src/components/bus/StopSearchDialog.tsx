@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -19,12 +20,13 @@ import type { StopSearchItem, Stop, VehicleMode } from '@/lib/types';
 import { AVAILABLE_MODES } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { searchStopsByName } from '@/lib/digitransit';
-import { Loader2, Search, Bus, TramFront, TrainTrack, Train, Ship, HelpCircle } from 'lucide-react';
+import { Loader2, Search, Bus, TramFront, TrainTrack, Train, Ship, HelpCircle, CheckCircle2 } from 'lucide-react';
 
 interface StopSearchDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onStopSelected: (stop: Stop) => void;
+  favoriteStops: Stop[]; // Added prop to check against existing favorites
 }
 
 export const getVehicleModeIcon = (mode?: VehicleMode, props?: React.ComponentProps<typeof Bus>) => {
@@ -35,7 +37,7 @@ export const getVehicleModeIcon = (mode?: VehicleMode, props?: React.ComponentPr
     case "TRAM":
       return <TramFront {...iconProps} />;
     case "SUBWAY":
-      return <TrainTrack {...iconProps} />;
+      return <TrainTrack {...iconProps} />; // Using TrainTrack for Subway
     case "RAIL":
       return <Train {...iconProps} />;
     case "FERRY":
@@ -45,7 +47,7 @@ export const getVehicleModeIcon = (mode?: VehicleMode, props?: React.ComponentPr
   }
 };
 
-export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChange, onStopSelected }) => {
+export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChange, onStopSelected, favoriteStops }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<StopSearchItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,6 +87,8 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
         description = "Network error: Could not connect to the server. Please check your internet connection or if an ad-blocker is interfering. The API might also be temporarily unavailable or blocking requests from this origin.";
       } else if (error instanceof Error) {
         description = error.message;
+      } else if (error && error.error && typeof error.error === 'string') {
+        description = error.error; // Use the nested error message if present
       }
       toast({
         title: "Search Error",
@@ -106,17 +110,18 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
     });
     // Do not close the dialog or clear search term/results here
     // to allow adding multiple stops.
-    // onOpenChange(false);
-    // setSearchTerm('');
-    // setSearchResults([]);
+  };
+
+  const isStopFavorite = (gtfsId: string): boolean => {
+    return favoriteStops.some(favStop => favStop.gtfsId === gtfsId);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) { // This ensures cleanup when dialog is closed via Cancel or X button
+      if (!open) { 
         setSearchTerm('');
         setSearchResults([]);
-        setIsLoading(false); // Reset loading state as well
+        setIsLoading(false); 
       }
       onOpenChange(open);
     }}>
@@ -174,25 +179,30 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
           {!isLoading && searchResults.length > 0 && (
             <ScrollArea className="h-[200px] rounded-md border p-2">
               <div className="space-y-1">
-                {searchResults.map((stop) => (
-                  <Button
-                    key={stop.gtfsId}
-                    variant="ghost"
-                    className="w-full justify-start text-left h-auto py-2.5 px-3 flex items-center"
-                    onClick={() => handleSelectStop(stop)}
-                    aria-label={`Add stop ${stop.name} to favorites`}
-                  >
-                    {getVehicleModeIcon(stop.vehicleMode)}
-                    <div className="flex-grow min-w-0">
-                      <p className="font-medium truncate" title={stop.name}>{stop.name}</p>
-                      {stop.code && <p className="text-xs text-muted-foreground">{stop.code}</p>}
-                    </div>
-                  </Button>
-                ))}
+                {searchResults.map((stop) => {
+                  const isFavorite = isStopFavorite(stop.gtfsId);
+                  return (
+                    <Button
+                      key={stop.gtfsId}
+                      variant={isFavorite ? "secondary" : "ghost"}
+                      className="w-full justify-start text-left h-auto py-2.5 px-3 flex items-center"
+                      onClick={() => !isFavorite && handleSelectStop(stop)}
+                      disabled={isFavorite}
+                      aria-label={isFavorite ? `${stop.name} is already a favorite` : `Add stop ${stop.name} to favorites`}
+                    >
+                      {getVehicleModeIcon(stop.vehicleMode)}
+                      <div className="flex-grow min-w-0">
+                        <p className="font-medium truncate" title={stop.name}>{stop.name}</p>
+                        {stop.code && <p className="text-xs text-muted-foreground">{stop.code}</p>}
+                      </div>
+                      {isFavorite && <CheckCircle2 className="h-5 w-5 text-green-500 ml-auto shrink-0" />}
+                    </Button>
+                  );
+                })}
               </div>
             </ScrollArea>
           )}
-           {!isLoading && searchResults.length === 0 && searchTerm.trim().length >=3 && ( // Removed !isLoading from condition as it was redundant with outer !isLoading
+           {!isLoading && searchResults.length === 0 && searchTerm.trim().length >=3 && ( 
             <div className="p-6 text-center text-muted-foreground h-[200px] flex flex-col justify-center items-center">
                 <p>No stops found matching your search criteria.</p>
             </div>

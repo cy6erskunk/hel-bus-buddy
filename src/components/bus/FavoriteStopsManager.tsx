@@ -89,6 +89,7 @@ export const FavoriteStopsManager: FC<FavoriteStopsManagerProps> = ({
         isOpen={isSearchDialogOpen}
         onOpenChange={setIsSearchDialogOpen}
         onStopSelected={onAddFavorite}
+        favoriteStops={favoriteStops} // Pass favoriteStops
       />
     </Card>
   );
