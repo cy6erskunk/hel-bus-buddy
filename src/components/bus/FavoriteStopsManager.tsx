@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Stop } from '@/lib/types';
-import { StopSearchDialog } from './StopSearchDialog';
+import { StopSearchDialog, getVehicleModeIcon } from './StopSearchDialog'; // Import getVehicleModeIcon
 import { PlusCircle, Trash2, Eye } from 'lucide-react';
 
 interface FavoriteStopsManagerProps {
@@ -45,16 +45,19 @@ export const FavoriteStopsManager: FC<FavoriteStopsManagerProps> = ({
             <p>Click "Add Stop" to get started.</p>
           </div>
         ) : (
-          <ScrollArea className="h-full p-4"> {/* Adjust height as needed */}
+          <ScrollArea className="h-full p-4"> 
             <div className="space-y-3">
               {favoriteStops.map((stop) => (
                 <Card 
                   key={stop.gtfsId} 
                   className={`transition-all hover:shadow-md ${selectedStopId === stop.gtfsId ? 'border-primary ring-2 ring-primary' : ''}`}
                 >
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-base">{stop.name}</CardTitle>
-                    {stop.code && <p className="text-xs text-muted-foreground">{stop.code}</p>}
+                  <CardHeader className="p-3 flex flex-row items-center">
+                    {getVehicleModeIcon(stop.vehicleMode, { className: "h-5 w-5 mr-2 text-primary shrink-0" })}
+                    <div className="min-w-0 flex-grow">
+                      <CardTitle className="text-base truncate" title={stop.name}>{stop.name}</CardTitle>
+                      {stop.code && <p className="text-xs text-muted-foreground">{stop.code}</p>}
+                    </div>
                   </CardHeader>
                   <CardFooter className="p-3 flex justify-end gap-2">
                     <Button

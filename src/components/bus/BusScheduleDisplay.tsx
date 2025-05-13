@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { StopDetails, Departure } from '@/lib/types';
 import { BusRouteCard } from './BusRouteCard';
 import { Filter, Info } from 'lucide-react';
+import { getVehicleModeIcon } from './StopSearchDialog'; // Import the icon helper
 
 interface BusScheduleDisplayProps {
   stopDetails: StopDetails | null;
@@ -32,7 +33,7 @@ export const BusScheduleDisplay: FC<BusScheduleDisplayProps> = ({ stopDetails, i
     // Sort departures: NOW first, then by time, then by route number for ties
     const sorted = [...stopDetails.stoptimesWithoutPatterns].sort((a, b) => {
       const timeA = a.realtime ? a.realtimeDeparture : a.scheduledDeparture;
-      const timeB = b.realtime ? b.realtimeDeparture : b.scheduledDeparture;
+      const timeB = b.realtime ? b.realtimeDeparture : a.scheduledDeparture;
       if (timeA === timeB) {
         return parseInt(a.trip.routeShortName, 10) - parseInt(b.trip.routeShortName, 10);
       }
@@ -85,9 +86,12 @@ export const BusScheduleDisplay: FC<BusScheduleDisplayProps> = ({ stopDetails, i
     <Card className="h-full flex flex-col shadow-lg">
       <CardHeader className="border-b">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-          <div>
-            <CardTitle className="text-lg">{stopDetails.name}</CardTitle>
-            {stopDetails.code && <p className="text-sm text-muted-foreground">{stopDetails.code}</p>}
+          <div className="flex items-center">
+             {getVehicleModeIcon(stopDetails.vehicleMode, { className: "h-6 w-6 mr-2 text-primary shrink-0" })}
+            <div>
+                <CardTitle className="text-lg">{stopDetails.name}</CardTitle>
+                {stopDetails.code && <p className="text-sm text-muted-foreground">{stopDetails.code}</p>}
+            </div>
           </div>
           <div className="relative flex-shrink-0 w-full sm:w-auto sm:max-w-xs">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -1,7 +1,7 @@
 
-import type { StopSearchQueryResult, StopDeparturesQueryResult, StopDetails, StopSearchItem } from './types';
+import type { StopSearchQueryResult, StopDeparturesQueryResult, StopDetails, StopSearchItem, VehicleMode } from './types';
 
-const PROXY_API_URL = '/api/digitransit'; // Client calls our own backend proxy
+const PROXY_API_URL = '/api/digitransit'; 
 
 async function fetchViaProxy(requestType: 'searchStops' | 'getDepartures', payload: Record<string, any>) {
   try {
@@ -33,27 +33,30 @@ async function fetchViaProxy(requestType: 'searchStops' | 'getDepartures', paylo
     }
 
     const jsonResponse = await response.json();
-    // Assuming the proxy returns data directly, not nested under a 'data' field like GraphQL
     return jsonResponse;
   } catch (error) {
     console.error(`Error fetching from Proxy API (src/lib/digitransit.ts) for ${requestType}:`, error instanceof Error ? error.message : String(error));
-    throw error; // Re-throw to be handled by the caller
+    throw error; 
   }
 }
 
-export async function searchStopsByName(name: string): Promise<StopSearchItem[]> {
-  const data = await fetchViaProxy('searchStops', { name });
-  return data || []; // Assuming proxy returns the array of stops directly
+export async function searchStopsByName(name: string, modes?: VehicleMode[]): Promise<StopSearchItem[]> {
+  const payload: { name: string; modes?: VehicleMode[] } = { name };
+  if (modes && modes.length > 0) {
+    payload.modes = modes;
+  }
+  const data = await fetchViaProxy('searchStops', payload);
+  return data || []; 
 }
 
 export async function getStopDepartures(stopGtfsId: string): Promise<StopDetails | null> {
   const data = await fetchViaProxy('getDepartures', { stopId: stopGtfsId });
-  return data; // Assuming proxy returns the stop details object or null directly
+  return data; 
 }
 
 export function formatDepartureTime(departure: { serviceDay: number, realtimeDeparture: number, scheduledDeparture: number, realtime: boolean }): string {
   const departureTimeSeconds = departure.realtime ? departure.realtimeDeparture : departure.scheduledDeparture;
-  const serviceDate = new Date(departure.serviceDay * 1000); // Service day is a UNIX timestamp
+  const serviceDate = new Date(departure.serviceDay * 1000); 
 
   const year = serviceDate.getFullYear();
   const month = serviceDate.getMonth();

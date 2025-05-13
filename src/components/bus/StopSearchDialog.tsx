@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -14,10 +15,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { StopSearchItem, Stop } from '@/lib/types';
+import { Checkbox } from '@/components/ui/checkbox';
+import type { StopSearchItem, Stop, VehicleMode } from '@/lib/types';
+import { AVAILABLE_MODES } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { searchStopsByName } from '@/lib/digitransit';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, Bus, TramFront, TrainTrack, Train, Ship, HelpCircle } from 'lucide-react';
 
 interface StopSearchDialogProps {
   isOpen: boolean;
@@ -25,11 +28,36 @@ interface StopSearchDialogProps {
   onStopSelected: (stop: Stop) => void;
 }
 
+export const getVehicleModeIcon = (mode?: VehicleMode, props?: React.ComponentProps<typeof Bus>) => {
+  const iconProps = { className: "h-5 w-5 mr-2 text-muted-foreground shrink-0", ...props };
+  switch (mode) {
+    case "BUS":
+      return <Bus {...iconProps} />;
+    case "TRAM":
+      return <TramFront {...iconProps} />;
+    case "SUBWAY":
+      return <TrainTrack {...iconProps} />; // Changed from Subway to TrainTrack
+    case "RAIL":
+      return <Train {...iconProps} />;
+    case "FERRY":
+      return <Ship {...iconProps} />;
+    default:
+      return <HelpCircle {...iconProps} />;
+  }
+};
+
 export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChange, onStopSelected }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<StopSearchItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedModes, setSelectedModes] = useState<VehicleMode[]>(AVAILABLE_MODES.map(m => m.mode));
   const { toast } = useToast();
+
+  const handleModeChange = (mode: VehicleMode) => {
+    setSelectedModes(prev =>
+      prev.includes(mode) ? prev.filter(m => m !== mode) : [...prev, mode]
+    );
+  };
 
   const handleSearch = async () => {
     if (searchTerm.trim().length < 3) {
@@ -41,14 +69,14 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
       return;
     }
     setIsLoading(true);
-    setSearchResults([]); // Clear previous results
+    setSearchResults([]); 
     try {
-      const results = await searchStopsByName(searchTerm.trim());
-      setSearchResults(results); // Update search results
+      const results = await searchStopsByName(searchTerm.trim(), selectedModes.length > 0 ? selectedModes : undefined);
+      setSearchResults(results); 
       if (results.length === 0) {
         toast({
           title: "No stops found",
-          description: `No stops found matching "${searchTerm}".`,
+          description: `No stops found matching "${searchTerm}"${selectedModes.length < AVAILABLE_MODES.length ? ' for the selected vehicle types' : ''}.`,
         });
       }
     } catch (error) {
@@ -71,9 +99,14 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
   };
 
   const handleSelectStop = (stop: StopSearchItem) => {
-    onStopSelected({ gtfsId: stop.gtfsId, name: stop.name, code: stop.code || undefined });
-    onOpenChange(false); // Close dialog after selection
-    setSearchTerm(''); // Reset search
+    onStopSelected({ 
+      gtfsId: stop.gtfsId, 
+      name: stop.name, 
+      code: stop.code || undefined,
+      vehicleMode: stop.vehicleMode 
+    });
+    onOpenChange(false); 
+    setSearchTerm(''); 
     setSearchResults([]);
   };
 
@@ -86,11 +119,11 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
       }
       onOpenChange(open);
     }}>
-      <DialogContent className="sm:max-w-[425px] shadow-xl">
+      <DialogContent className="sm:max-w-md shadow-xl">
         <DialogHeader>
-          <DialogTitle>Add Favorite Bus Stop</DialogTitle>
+          <DialogTitle>Add Favorite Stop</DialogTitle>
           <DialogDescription>
-            Search for a bus stop by name or code (e.g., "Kamppi" or "E1234").
+            Search by name or code. Filter by vehicle type.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -111,6 +144,27 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
               <span className="ml-2">Search</span>
             </Button>
           </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Vehicle Types</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-2 p-2 rounded-md border">
+              {AVAILABLE_MODES.map(({ mode, label }) => (
+                <div key={mode} className="flex items-center space-x-2 py-1 hover:bg-accent/10 rounded">
+                  <Checkbox
+                    id={`mode-${mode}`}
+                    checked={selectedModes.includes(mode)}
+                    onCheckedChange={() => handleModeChange(mode)}
+                    aria-label={`Filter by ${label}`}
+                  />
+                  <Label htmlFor={`mode-${mode}`} className="text-sm font-normal cursor-pointer flex items-center flex-1 min-w-0">
+                    {getVehicleModeIcon(mode, { className: "h-4 w-4 mr-1.5 text-muted-foreground"})} 
+                    <span className="truncate" title={label}>{label}</span>
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {isLoading && searchResults.length === 0 && (
             <div className="flex justify-center items-center h-[200px]">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -118,16 +172,17 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
           )}
           {!isLoading && searchResults.length > 0 && (
             <ScrollArea className="h-[200px] rounded-md border p-2">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {searchResults.map((stop) => (
                   <Button
                     key={stop.gtfsId}
                     variant="ghost"
-                    className="w-full justify-start text-left h-auto py-2"
+                    className="w-full justify-start text-left h-auto py-2.5 px-3 flex items-center"
                     onClick={() => handleSelectStop(stop)}
                   >
-                    <div>
-                      <p className="font-medium">{stop.name}</p>
+                    {getVehicleModeIcon(stop.vehicleMode)}
+                    <div className="flex-grow min-w-0">
+                      <p className="font-medium truncate" title={stop.name}>{stop.name}</p>
                       {stop.code && <p className="text-xs text-muted-foreground">{stop.code}</p>}
                     </div>
                   </Button>
