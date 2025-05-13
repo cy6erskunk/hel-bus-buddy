@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { FC } from 'react';
@@ -36,7 +35,7 @@ export const getVehicleModeIcon = (mode?: VehicleMode, props?: React.ComponentPr
     case "TRAM":
       return <TramFront {...iconProps} />;
     case "SUBWAY":
-      return <TrainTrack {...iconProps} />; // Changed from Subway to TrainTrack
+      return <TrainTrack {...iconProps} />;
     case "RAIL":
       return <Train {...iconProps} />;
     case "FERRY":
@@ -69,20 +68,20 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
       return;
     }
     setIsLoading(true);
-    setSearchResults([]); 
+    setSearchResults([]);
     try {
       const results = await searchStopsByName(searchTerm.trim(), selectedModes.length > 0 ? selectedModes : undefined);
-      setSearchResults(results); 
+      setSearchResults(results);
       if (results.length === 0) {
         toast({
           title: "No stops found",
           description: `No stops found matching "${searchTerm}"${selectedModes.length < AVAILABLE_MODES.length ? ' for the selected vehicle types' : ''}.`,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching stops:', JSON.stringify(error, null, 2));
       let description = 'An unexpected error occurred while searching for stops.';
-      if (error instanceof TypeError && error.message.toLowerCase().includes('failed to fetch')) {
+       if (error.message?.toLowerCase().includes('failed to fetch') || error.message?.toLowerCase().includes('networkerror')) {
         description = "Network error: Could not connect to the server. Please check your internet connection or if an ad-blocker is interfering. The API might also be temporarily unavailable or blocking requests from this origin.";
       } else if (error instanceof Error) {
         description = error.message;
@@ -99,23 +98,25 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
   };
 
   const handleSelectStop = (stop: StopSearchItem) => {
-    onStopSelected({ 
-      gtfsId: stop.gtfsId, 
-      name: stop.name, 
+    onStopSelected({
+      gtfsId: stop.gtfsId,
+      name: stop.name,
       code: stop.code || undefined,
-      vehicleMode: stop.vehicleMode 
+      vehicleMode: stop.vehicleMode
     });
-    onOpenChange(false); 
-    setSearchTerm(''); 
-    setSearchResults([]);
+    // Do not close the dialog or clear search term/results here
+    // to allow adding multiple stops.
+    // onOpenChange(false);
+    // setSearchTerm('');
+    // setSearchResults([]);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
+      if (!open) { // This ensures cleanup when dialog is closed via Cancel or X button
         setSearchTerm('');
         setSearchResults([]);
-        setIsLoading(false);
+        setIsLoading(false); // Reset loading state as well
       }
       onOpenChange(open);
     }}>
@@ -123,7 +124,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
         <DialogHeader>
           <DialogTitle>Add Favorite Stop</DialogTitle>
           <DialogDescription>
-            Search by name or code. Filter by vehicle type.
+            Search by name or code. Filter by vehicle type. Click a stop to add it.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -157,7 +158,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
                     aria-label={`Filter by ${label}`}
                   />
                   <Label htmlFor={`mode-${mode}`} className="text-sm font-normal cursor-pointer flex items-center flex-1 min-w-0">
-                    {getVehicleModeIcon(mode, { className: "h-4 w-4 mr-1.5 text-muted-foreground"})} 
+                    {getVehicleModeIcon(mode, { className: "h-4 w-4 mr-1.5 text-muted-foreground"})}
                     <span className="truncate" title={label}>{label}</span>
                   </Label>
                 </div>
@@ -179,6 +180,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
                     variant="ghost"
                     className="w-full justify-start text-left h-auto py-2.5 px-3 flex items-center"
                     onClick={() => handleSelectStop(stop)}
+                    aria-label={`Add stop ${stop.name} to favorites`}
                   >
                     {getVehicleModeIcon(stop.vehicleMode)}
                     <div className="flex-grow min-w-0">
@@ -190,7 +192,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
               </div>
             </ScrollArea>
           )}
-           {!isLoading && searchResults.length === 0 && searchTerm.trim().length >=3 && !isLoading && (
+           {!isLoading && searchResults.length === 0 && searchTerm.trim().length >=3 && ( // Removed !isLoading from condition as it was redundant with outer !isLoading
             <div className="p-6 text-center text-muted-foreground h-[200px] flex flex-col justify-center items-center">
                 <p>No stops found matching your search criteria.</p>
             </div>
@@ -198,7 +200,7 @@ export const StopSearchDialog: FC<StopSearchDialogProps> = ({ isOpen, onOpenChan
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Done
           </Button>
         </DialogFooter>
       </DialogContent>
